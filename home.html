@@ -1,0 +1,535 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+   <link href="css/bootstrap.min.css" rel="stylesheet">
+   <!-- CSS FOR TOGGLE LEFT MENU -->
+     <link href='http://fonts.googleapis.com/css?family=Exo+2:400,600,300,900' rel='stylesheet' type='text/css'>
+     <link href="css/navbar-static-top.css" rel="stylesheet">
+     <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+   <!-- END CSS FOR TOGGLE LEFT MENU -->
+   <link href="css/custom.css" rel="stylesheet">
+<script src="phonegap.js"></script>
+   <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+   <script src="js/jquery.min.js"></script>
+   <!-- <script src="js/menu.js"></script>-->
+ <script type="text/javascript" charset="utf-8">
+    // Call onDeviceReady when Cordova is loaded.
+    // At this point, the document has loaded but cordova-1.8.1.js has not.
+    // When Cordova is loaded and talking with the native device,
+    // it will call the event `deviceready`.
+    function onLoad() {
+        document.addEventListener("deviceready", onDeviceReady, false);
+    }
+    // Cordova is loaded and it is now safe to make calls Cordova methods
+    function onDeviceReady() {
+        document.addEventListener("offline", onOffline, false);
+        document.addEventListener("online", onOnline, false);
+        if (device.model!=null)
+        {
+          localStorage.setItem("duuid", device.uuid);
+          localStorage.setItem("dmodel", device.model);
+          localStorage.setItem("dplatform", device.platform);
+          localStorage.setItem("dversion", device.version);
+        }
+        //alert("onDeviceReady");
+    }
+    // Handle the offline event
+    function onOffline() {
+      $("#offline-alert").alert();
+      $("#offline-alert").fadeTo(2000, 500).slideUp(500, function(){
+        $("#offline-alert").alert('close');
+      });   
+      //btn_noleggia_veicolo disabled
+      $('#btn_noleggia_veicolo').addClass( "disabled" );
+    }
+    // Handle the online event
+    function onOnline() {
+      $("#online-alert").alert();
+      $("#online-alert").fadeTo(2000, 500).slideUp(500, function(){
+        $("#online-alert").alert('close');
+      });   
+      //btn_noleggia_veicolo enabled!
+      $('#btn_noleggia_veicolo').removeClass( "disabled" );
+    }
+    // Handle the back browser button
+    document.addEventListener("backbutton", onBackKeyDown, false);
+    function onBackKeyDown() {
+      if (confirm("Chiudere l'applicazione?")) {
+        navigator.app.exitApp();
+      }
+    }
+
+</script>
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '"');
+          } else {
+              o[this.name] = this.value || '"';
+          }
+      });
+      return o;
+  };
+
+  function debugLocalStorage(){
+    console.log("***** START debugLocalStorage *****");
+    for (var i = 0; i < localStorage.length; i++){
+      console.log(i + ") [localStorage] chiave: " + localStorage.key(i) + " - valore: " + localStorage.getItem(localStorage.key(i)));
+    }
+    console.log("*****  END debugLocalStorage  *****");
+  }
+
+  function LoadImg(qrcode, action, print) {
+      var image_qrcode = localStorage.getItem(qrcode+"_"+action); 
+      if ( (image_qrcode!=null) && (image_qrcode.length>20)  ){
+          console.log("HO GIA' SCARICATO IL QRCODE ["+qrcode+"_"+action+"] - lo recupero dal localStorage. print: " + print );
+          if (print.localeCompare("Y")==0){
+              document.getElementById("documentHolder").src = "data:image/png;base64," + image_qrcode;
+              if (action.localeCompare("on")==0){
+                document.getElementById("div_qrcode").style.backgroundColor = "#5cb85c"; 
+              }
+              if (action.localeCompare("off")==0){
+                document.getElementById("div_qrcode").style.backgroundColor = "#d9534f"; 
+              }
+          }
+      }
+      else{
+          console.log("NON HO MAI SCARICATO IL QRCODE - effettuo la chiamata remota.");
+          var xmlhttp;
+          if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
+              xmlhttp = new XMLHttpRequest();
+          } else { // code for IE6, IE5
+              xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+          }
+          xmlhttp.onreadystatechange = function() {
+              if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {     
+                  var binary_qrcode = xmlhttp.responseText;
+                  console.log("xmlhttp.responseText:" + binary_qrcode);
+                  //salvo il QRCODE nel localStorage
+                  localStorage.setItem(qrcode+"_"+action, binary_qrcode);
+                  if (print.localeCompare("Y")==0){
+                      if (action.localeCompare("on")==0){
+                        document.getElementById("div_qrcode").style.backgroundColor = "#5cb85c"; 
+                      }
+                      if (action.localeCompare("off")==0){
+                        document.getElementById("div_qrcode").style.backgroundColor = "#d9534f"; 
+                      }
+                      if (binary_qrcode.length>20){
+                        //QRCODE OK
+                        document.getElementById("documentHolder").src = "data:image/png;base64," + binary_qrcode;
+                      }
+                      else{
+                        //QRCODE NON ANCORA PRONTO!
+                        document.getElementById("documentHolder").src = "pics/image_not_available.jpg";
+                        var html = $("#div_qrcode").html() + 
+                        "<br>" + 
+                        "<div class='alert alert-danger'>" +
+                        "QRCODE non ancora prodotto.<br>Attendere qualche secondo e riprovare."+
+                        "</div>";
+                        $("#div_qrcode").html(html);
+                        setTimeout(function(){ window.location = "home.html"; }, 2000);
+                      }
+                  }
+              }
+          };
+          var random = Math.random();
+          var url = 'http://service.cloudmup.com/GOALocale/CCSAppGetQRCode.php?qrcode=' + qrcode + '&action=' + action + '&random=' + random;
+          console.log("URL: " + url);
+          xmlhttp.open("GET", url);
+          xmlhttp.send(null);
+      }
+  }
+
+  function call(){
+    var matricola = localStorage.getItem("matricola");
+    if (matricola==null)
+        matricola="test";
+    var random = Math.random();
+    var xmlhttp = new XMLHttpRequest();
+    var url="http://service.cloudmup.com/GOALocale/CCSAppQuery.php?matricola="+matricola+"&random="+random;
+    console.log("url:"+url);
+    xmlhttp.onreadystatechange=function() {
+        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var lista = xmlhttp.responseText;
+            localStorage.setItem("lista", lista);
+        }
+    }
+    xmlhttp.open("GET", url, true);
+    xmlhttp.send();
+  }
+
+  function prenota(codice_veicolo, targa){
+    console.log("PRENOTA - codice_veicolo: " + codice_veicolo + " - targa: " + targa );
+    //per ora inserito confirm solo per test!
+    //if (confirm("Vuoi prenotare il veicolo: " + codice_veicolo + " - targato: " + targa + "?")) {
+    if (confirm("Vuoi prenotare il veicolo targato: " + targa + "?")) {
+      var vehicle_code = codice_veicolo;
+      var utilizzatore = localStorage.getItem("matricola");
+      var url = "http://service.cloudmup.com/GOALocale/CCSAppInsPrenVista.php?utilizzatore="+utilizzatore+"&vehicle_code="+vehicle_code;
+      //DEBUG alert("url: "+ url);
+      $.ajax({
+        url: url,
+        type: 'POST', // Send post data
+        async: false,
+        success: function(s){
+          var result = JSON.stringify(s);
+          //console.log(result.substring(1, result.length-1));
+          //con la substring tolgo le due parentesi quadre ad inizio e fine stringa...
+          var obj = JSON.parse(result.substring(1, result.length-1));
+          console.log("result: " + obj.result + " - id_pren: " + obj.id_pren);
+          //DEBUG alert("result: " + obj.result + " - id_pren: " + obj.id_pren);
+          if (obj.result=='OK'){
+              call();
+              //alert("PRENOTAZIONE OK - ID: " + obj.id_pren);  
+              //setTimeout(function(){ window.location = "home.html"; }, 1000);
+              $("#prenotazione-ok-alert").alert();
+              $("#prenotazione-ok-alert").fadeTo(2000, 500).slideUp(500, function(){
+                  $("#prenotazione-ok-alert").alert('close');
+                  window.location = "home.html";
+              });   
+          }
+          else{
+              //alert("ERRORE PRENOTAZIONE: " + obj.result);
+              //setTimeout(function(){ window.location = "home.html"; }, 1000);
+              $("#errore-prenotazione-alert").alert();
+              $("#errore-prenotazione-alert").fadeTo(2000, 500).slideUp(500, function(){
+                  $("#errore-prenotazione-alert").alert('close');
+                  window.location = "home.html";
+              });   
+          }
+        }
+      });
+    }
+  }
+
+  function getDepot(){
+    var matricola = localStorage.getItem("matricola");
+    var random = Math.random();
+    var xmlhttp = new XMLHttpRequest();
+    var url="http://service.cloudmup.com/GOALocale/CCSAppGetDepot.php?matricola="+matricola+"&random="+random;
+    console.log("url:"+url);
+    xmlhttp.onreadystatechange=function() {
+        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var lista_depot = xmlhttp.responseText;
+            localStorage.setItem("lista_depot", lista_depot);
+            var html = "";
+            var arr = JSON.parse(lista_depot);
+            for(i = 0; i < arr.length; i++) {
+                console.log(i + ") depot_id: " + arr[i].depot_id + " - depot_name: " + arr[i].depot_name );
+                html += "<option value=" + arr[i].depot_id + " SELECTED >" + arr[i].depot_name + "</option>";
+            }
+            if (arr.length==0)
+                html += "<option value=0 SELECTED >Test</option>";
+            $( "#deposito" ).html( html );
+        }
+    }
+    xmlhttp.open("GET", url, true);
+    xmlhttp.send();
+    
+  }
+
+  function getVehicles(deposito, nome_deposito){
+    if (deposito==null){
+        deposito=0;
+        nome_deposito="Test";
+    }
+    var random = Math.random();
+    var xmlhttp = new XMLHttpRequest();
+    var url="http://service.cloudmup.com/GOALocale/CCSAppGetVehicles.php?id_depot="+deposito+"&random="+random;
+    console.log("url:"+url);
+    xmlhttp.onreadystatechange=function() {
+        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var lista_veicoli = xmlhttp.responseText;
+            localStorage.setItem("lista_veicoli", lista_veicoli);
+            var html = "<center>Deposito di <B>" + nome_deposito + "</B></center><br>";
+                html += "<table class='table table-striped' width='100%'>";
+                var arr = JSON.parse(lista_veicoli);
+                for(i = 0; i < arr.length; i++) {
+                    console.log(i + ") vehicle_code: " + arr[i].vehicle_code + " - plate_num: " + arr[i].plate_num );
+                    html += "<tr><td align=center><B>" + arr[i].plate_num + "</B></td>";
+                    html += "<td align=center>";
+                    html += "<button id='btn_prenota' class='btn btn-primary' onclick=\"prenota('"+arr[i].vehicle_code+"','"+arr[i].plate_num+"');\" >";
+                    html += "Noleggia</button>";
+                    html += "</td></tr>";
+                }
+                if (arr.length==0)
+                    html += "<br>Nessun veicolo disponibile.<br>";
+                html += "</table>";
+            $( "#result" ).html( html );
+        }
+    }
+    xmlhttp.open("GET", url, true);
+    xmlhttp.send();
+  }
+
+  function chiusuraNoleggio(){
+    console.log("btn_chiusura");
+    var booking_id = localStorage.getItem("booking_id");
+    var vehicle_code = localStorage.getItem("vehicle_code");
+    var plate_num = localStorage.getItem("plate_num");
+    //alert("booking_id: " + booking_id);
+    if ( (booking_id==null)||
+         (booking_id.localeCompare("")==0) )
+    {
+      return false;
+    }
+    var url = "http://service.cloudmup.com/GOALocale/CCSAppChiusura.php?booking_id="+booking_id+"&vehicle_code="+vehicle_code;
+    if (confirm("Vuoi chiudere la prenotazione: " + booking_id + " - sul veicolo targato: " + plate_num + "?")) {
+      $.ajax({
+        url: url,
+            type: 'POST', // Send post data
+            async: false,
+            success: function(s){
+              call();
+              var result_del = s;
+              console.log(JSON.stringify(result_del));
+              //setTimeout(function(){ window.location = "home.html"; }, 1500);
+              $("#chiusura-alert").alert();
+              $("#chiusura-alert").fadeTo(2000, 500).slideUp(500, function(){
+                  $("#chiusura-alert").alert('close');
+                  window.location = "home.html";
+              });   
+            }
+      });
+    }
+  }
+
+  $(document).ready(function() {
+    call();
+    $("#online-alert").hide();
+    $("#offline-alert").hide();
+    $("#prenotazione-ok-alert").hide();
+    $("#errore-prenotazione-alert").hide();
+    $("#chiusura-alert").hide();
+    //STA SU INDEX $("#nologin-alert").hide();
+
+    $("#btn_inizio_noleggio").click(function(){
+      var booking_id = localStorage.getItem("booking_id");
+      console.log("btn_inizio_noleggio - id: " + booking_id);
+      window.plugins.insomnia.keepAwake();
+      console.log("window.plugins.insomnia.keepAwake");
+      /*  MODIFICHE RICHIESTE DA MAURIZIO IN DATA 14/09/2017
+      var html = "  <div id='div_qrcode' style='background-color:#FFFFFF;padding:10px;text-align:center;'>";
+          html +="<img id='documentHolder' src='' alt='' />";
+      */
+      var html = "<div style='width:100%;background:#FFFFFF;' >";
+          html +="<div id='div_qrcode' style='background:#FFFFFF;float:right;text-align:center;padding:10px;'>";
+          html +="<img id='documentHolder' src='' alt=''  width='170px' />";
+          html +="</div>";
+          html +="</div>"; 
+      $( "#result" ).html( html);
+      LoadImg(booking_id,'on','Y');
+      //debugLocalStorage();
+    });
+
+    $("#btn_fine_noleggio, #btn_cancella_noleggio").click(function(){
+      var booking_id = localStorage.getItem("booking_id");
+      console.log("btn_fine_noleggio - id: " + booking_id);
+      window.plugins.insomnia.keepAwake();
+      console.log("window.plugins.insomnia.keepAwake");
+      /*  MODIFICHE RICHIESTE DA MAURIZIO IN DATA 14/09/2017
+      var html = "<div id='div_qrcode' style='background-color:#FFFFFF;padding:10px;text-align:center;'>";
+          html +="<img id='documentHolder' src='' alt='' />"; 
+      */
+      var html = "<div style='width:100%;background:#FFFFFF;' >";
+          html +="<div id='div_qrcode' style='background:#FFFFFF;float:right;text-align:center;padding:10px;'>";
+          html +="<img id='documentHolder' src='' alt=''  width='170px' />";
+          html +="</div>";
+          html +="</div>"; 
+      $( "#result" ).html( html);
+      LoadImg(booking_id,'off','Y');
+      html = $( "#result" ).html();
+      html += "<br><br>";
+      /* html += "<button onclick='chiusuraNoleggio();' type=button class='btn btn-danger btn-lg bottone' style='margin-bottom:10px;' >Conferma chiusura veicolo</button>"; */
+      $( "#result" ).html( html);
+      //debugLocalStorage();
+    });
+
+    $("#btn_noleggia_veicolo").click(function(){
+      var deposito = $('#deposito').val();
+      console.log("btn_noleggia_veicolo: " + deposito);
+      var nome_deposito = $("#deposito option:selected").html();
+      console.log( "nome deposito: " + nome_deposito );
+      getVehicles(deposito, nome_deposito);
+    });
+
+    $('#btn_exit').click(function() {
+      if (confirm("Chiudere l'applicazione?")) {
+        navigator.app.exitApp();
+      }
+    });
+
+    $("#btn_logout").click(function(){
+      //alert("btn_logout");
+      if (confirm("effettuare il Log-out?")) {
+        localStorage.clear();
+        console.log("btn_logout: "+localStorage.getItem("login"));
+        window.location.href = 'index.html';
+      }
+    });
+
+  });  
+</script>
+
+</head>
+<body onload="onLoad()">
+    <!-- Static navbar -->
+    <nav class="navbar navbar-default navbar-fixed-top gradienti">
+      <div class="container">
+        <div class="navbar-header">
+          <!-- solo per la pagina index.html NON ESISTE IL MENU ed il logo ha un margine di 40 pixel -->
+          <div class="navbar-header" style="line-height: 56px;" id="testata" >
+            <a href="./home.html" type="button" class='.navbar-toggle pull-left' style="color: #0B3D86;padding-top: 20px;padding-left: 10px;" >
+              <span class="glyphicon glyphicon-refresh" aria-hidden="true" style="color: #0B3D86;" ></span>
+            </a>
+            <!--<img src="pics/geonav.png" height="56px" align="left" id="logo_small" style="margin-left:40px;" />-->
+            <a href="./home.html">
+               <img src="pics/logo.png" height="50px" align="middle" id="logo_small" />
+            </a>
+
+            <a id="btn_exit" type="button" class='.navbar-toggle pull-right' style="margin-left:15px;color: #FE000D;" >
+               <span class="glyphicon glyphicon-remove" aria-hidden="true" style="color: #FE000D;" ></span>&nbsp;&nbsp;&nbsp;
+            </a>
+
+            <a id="btn_logout" type="button" class='.navbar-toggle pull-right' style="color: #0B3D86;" >
+               <span class="  glyphicon glyphicon-log-out" aria-hidden="true" style="color: #0B3D86;" ></span>&nbsp;&nbsp;&nbsp;
+            </a>
+
+          </div>
+        </div>
+      </div>
+    </nav>
+    <!-- <div class="container-fluid" style="max-width: 540px;" id="fluido" > -->
+    <div class="container-fluid" id="fluido" >
+      <div class="row">
+        <div class="col-sm-12 col-sm-offset-0 col-md-12 col-md-offset-0 main" id="contenuto" >
+          <div class="alert alert-success" id="online-alert">
+              <button type="button" class="close" data-dismiss="alert">x</button>
+              Il dispositivo e' <strong>OnLine!</strong>
+          </div>
+          <div class="alert alert-danger" id="offline-alert">
+              <button type="button" class="close" data-dismiss="alert">x</button>
+              Il dispositivo e' <strong>OffLine!</strong><br>
+              Questa App richiede una connessione internet.
+          </div>
+          <div class="alert alert-success" id="prenotazione-ok-alert">
+              <button type="button" class="close" data-dismiss="alert">x</button>
+              La prenotazione e' andata a buon fine.
+          </div>
+          <div class="alert alert-danger" id="errore-prenotazione-alert">
+              <button type="button" class="close" data-dismiss="alert">x</button>
+              ERRORE la prenotazione NON e' andata a buon fine.
+          </div>
+          <div class="alert alert-success" id="chiusura-alert">
+              <button type="button" class="close" data-dismiss="alert">x</button>
+              La prenotazione e' stata chiusa con successo.
+          </div>
+          <br>
+<!-- RECUPERARE UNA IMMAGINE LATO SERVER, SALVARLA NEL LOCALSTORAGE E VISUALIZZARLA:
+https://stackoverflow.com/questions/5363957/retrieve-an-image-from-the-server-store-it-in-localstorage-and-display-it
+http://devilmaycode.altervista.org/retrieve-an-image-from-the-server-store-it-in-localstorage-and-display-it/
+view-source:http://devilmaycode.altervista.org/retrieve-an-image-from-the-server-store-it-in-localstorage-and-display-it/
+-->
+          <div id='result' ></div>
+          <script>
+            var lista = localStorage.getItem("lista");
+            console.log("lista: " + lista);
+            var matricola = localStorage.getItem("matricola");
+            console.log("matricola: " + matricola);
+            var html = "";
+            //DEBUG $( "#result" ).html( "<B>DEBUG lista:</B><br>" + lista );
+            if (lista != null){
+              var arr = JSON.parse(lista);  
+  /*
+  [{"vehicle_status":"PRENOTATO","booking_status":"ATTESA PICKUP","booking_id":"915005489390001","inizio_pren":"2017-07-20 13:08:59","fine_pren":"2017-07-20 21:08:59","plate_num":"AA123BB","user_id":"2","user_name":"test","depot_name":"Test"}]
+  */            
+              for(i = 0; i < arr.length; i++) {
+                console.log(i + ") vehicle_status: " + arr[i].vehicle_status);
+                console.log(i + ") booking_status: " + arr[i].booking_status);
+                console.log(i + ") booking_id: " + arr[i].booking_id);
+                console.log(i + ") inizio_pren: " + arr[i].inizio_pren);
+                console.log(i + ") fine_pren: " + arr[i].fine_pren);
+                console.log(i + ") vehicle_code: " + arr[i].vehicle_code);
+                console.log(i + ") plate_num: " + arr[i].plate_num);
+                console.log(i + ") user_id: " + arr[i].user_id);
+                console.log(i + ") user_name: " + arr[i].user_name);
+                console.log(i + ") depot_name: " + arr[i].depot_name);
+
+                //SALVO LA PRENOTAZIONE ED I DATI DEL VEICOLO NEL LOCALSTORAGE:
+                localStorage.setItem("booking_id",arr[i].booking_id);
+                localStorage.setItem("vehicle_code",arr[i].vehicle_code);
+                localStorage.setItem("plate_num",arr[i].plate_num);
+
+                html += "<table class='table table-striped' width='100%'>";
+                html += "<tr><td width='40%' >Matricola: </td><td width='60%' >" + matricola + "</td></tr>";
+                html += "<tr><td>Prenotazione: </td><td>" + arr[i].booking_id + "</td></tr>";
+                html += "<tr><td>Sede: </td><td>" + arr[i].depot_name + "</td></tr>";
+                html += "<tr><td>Partenza: </td><td>" + arr[i].inizio_pren + "</td></tr>";
+                html += "<tr><td>Riconsegna: </td><td>" + arr[i].fine_pren + "</td></tr>";
+                html += "<tr><td>&nbsp;</td><td>&nbsp;</td></tr>";
+                html += "<tr><td>Veicolo: </td><td><b>" + arr[i].plate_num + "</b></td></tr>";
+                html += "</table>";
+                if (arr[i].vehicle_status=='PRENOTATO'){
+                  html += "<button id='btn_inizio_noleggio' type=button class='btn btn-success btn-lg bottone' style='margin-bottom:10px;' >",
+                  html += "Inizio Noleggio</button>";
+                  html += "<br>";
+                  html += "<button id='btn_cancella_noleggio' type=button class='btn btn-default btn-lg bottone' style='margin-bottom:10px;' >",
+                  html += "Cancella Noleggio</button>";
+                }
+                else{
+                  html += "<button id='btn_fine_noleggio' type=button class='btn btn-danger btn-lg bottone' style='margin-bottom:10px;' >",
+                  html += "Fine Noleggio</button>";
+                }
+                localStorage.setItem("prenotazione", arr[i].booking_id);
+                LoadImg(arr[i].booking_id,'on','N');
+                LoadImg(arr[i].booking_id,'off','N');
+              }
+              if (arr.length==0){
+                //PRESA IN PARCHEGGIO:
+                html += "<table class='table table-striped' width='100%'>";
+                html += "<tr><td width='40%' >Matricola: </td><td width='60%' >" + matricola + "</td></tr>";
+                html += "</table>";
+                html += "<br>";
+                html += "Se desideri effettuare un noleggio utilizzando la Presa in parcheggio seleziona la sede in cui ti trovi e premi il pulsante Noleggia un veicolo.<br>";
+                html += "<br>";
+                html += "<form>";                
+                html += "<div class='form-group'>";
+                html += "<select class='form-control' id='deposito' name='deposito'>";
+                getDepot();
+/* QUERY PER PRENDERE TUTTE LE SEDI VALIDE X IL CCS:
+SELECT depot_id, depot_name from cpool_depot WHERE `status` = 'ENABLED' AND fk_category_id = ( SELECT IFNULL(p.fk_category_id, 1) FROM cpool_user_profile up JOIN cpool_profiles p ON (p.profile_id = up.profile_id) WHERE up.user_id = 2 );
+- 0   Test
+- 2   Demo
+PREPARATA PAGINA LATO SERVER: CCSAppGetDepot.php
+*/
+                //html += "<option value=0 SELECTED >Test</option>";
+                //html += "<option value=2>Demo</option>";
+                html += "</select>";
+                html += "</div>";
+                html += "</form>";
+                html += "<br>";
+                html += "<button id='btn_noleggia_veicolo' type=button class='btn btn-primary btn-lg bottone' style='margin-bottom:10px;' >",
+                html += "Noleggia un veicolo</button>";
+              }
+            }
+            $( "#result" ).html( html);
+
+            //DEBUG debugLocalStorage();
+            console.log("ultima prenotazione: " + localStorage.getItem("prenotazione") ); 
+          </script>
+
+
+        </div> <!-- close <div class="col-sm-12 col-sm-offset-0 col-md-12 col-md-offset-0 main"> -->
+      </div> <!-- close div row --> 
+    </div> <!-- close div container-fluid -->
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+</body>
+</html>
