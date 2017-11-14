@@ -149,25 +149,6 @@
       }
   }
 
-/*******
-  function call(){
-    var matricola = localStorage.getItem("matricola");
-    if (matricola==null)
-        matricola="test";
-    var random = Math.random();
-    var xmlhttp = new XMLHttpRequest();
-    var url="http://service.cloudmup.com/GOALocale/CCSAppQuery.php?matricola="+matricola+"&random="+random;
-    console.log("url:"+url);
-    xmlhttp.onreadystatechange=function() {
-        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            var lista = xmlhttp.responseText;
-            localStorage.setItem("lista", lista);
-        }
-    }
-    xmlhttp.open("GET", url, true);
-    xmlhttp.send();
-  }
-********/
   function chiusuraManutenzione(){
     console.log("BUTTON chiusura_manutenzione");
     var vehicle_code = localStorage.getItem("vehicle_code");
@@ -210,9 +191,8 @@
     var html = "<center>veicolo: <b>" + targa + "</b></center>";
     html += "<br>";
     html += "<center>";
-html += "<input type='button' id='qrcode_apertura' class='btn btn-success' value='QRCODE APERTURA' onclick=\"qrOpen('"+codice_veicolo+"','"+targa+"');\" > "; 
-html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value='QRCODE CHIUSURA' onclick=\"qrClose('"+codice_veicolo+"','"+targa+"');\" > "; 
-
+    html += "<input type='button' id='qrcode_apertura' class='btn btn-success' value='QRCODE APERTURA' onclick=\"qrOpen('"+codice_veicolo+"','"+targa+"');\" > "; 
+    html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value='QRCODE CHIUSURA' onclick=\"qrClose('"+codice_veicolo+"','"+targa+"');\" > "; 
     html += "<div style='width:100%;background:#F3F3F3;height: 260px;min-height: 260px;' >";
     html += "<br>";
     html += "<center>";
@@ -220,61 +200,11 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
     html +="<img id='documentHolder' src='' alt=''  />";
     html +="</div>";
     html +="</div>"; 
-
     html += "<br>";
     html += "<br>";
     html += "<input type='button' id='chiusura_manutenzione' class='btn btn-lg btn-warning' value='CHIUSURA MANUTENZIONE' onclick='chiusuraManutenzione();' /> ";
     html += "</center>";
     $( "#result" ).html( html);
-    /*
-
-      $( "#result" ).html( html);
-      LoadImg(targa,'on','Y');
-    */
-  }
-
-  function prenota(codice_veicolo, targa){
-    console.log("PRENOTA - codice_veicolo: " + codice_veicolo + " - targa: " + targa );
-    //per ora inserito confirm solo per test!
-    //if (confirm("Vuoi prenotare il veicolo: " + codice_veicolo + " - targato: " + targa + "?")) {
-    if (confirm("Vuoi prenotare il veicolo targato: " + targa + "?")) {
-      var vehicle_code = codice_veicolo;
-      var utilizzatore = localStorage.getItem("matricola");
-      var url = "http://service.cloudmup.com/GOALocale/CCSAppInsPrenVista.php?utilizzatore="+utilizzatore+"&vehicle_code="+vehicle_code;
-      //DEBUG alert("url: "+ url);
-      $.ajax({
-        url: url,
-        type: 'POST', // Send post data
-        async: false,
-        success: function(s){
-          var result = JSON.stringify(s);
-          //console.log(result.substring(1, result.length-1));
-          //con la substring tolgo le due parentesi quadre ad inizio e fine stringa...
-          var obj = JSON.parse(result.substring(1, result.length-1));
-          console.log("result: " + obj.result + " - id_pren: " + obj.id_pren);
-          //DEBUG alert("result: " + obj.result + " - id_pren: " + obj.id_pren);
-          if (obj.result=='OK'){
-              //call();
-              //alert("PRENOTAZIONE OK - ID: " + obj.id_pren);  
-              //setTimeout(function(){ window.location = "home.html"; }, 1000);
-              $("#prenotazione-ok-alert").alert();
-              $("#prenotazione-ok-alert").fadeTo(2000, 500).slideUp(500, function(){
-                  $("#prenotazione-ok-alert").alert('close');
-                  window.location = "home.html";
-              });   
-          }
-          else{
-              //alert("ERRORE PRENOTAZIONE: " + obj.result);
-              //setTimeout(function(){ window.location = "home.html"; }, 1000);
-              $("#errore-prenotazione-alert").alert();
-              $("#errore-prenotazione-alert").fadeTo(2000, 500).slideUp(500, function(){
-                  $("#errore-prenotazione-alert").alert('close');
-                  window.location = "home.html";
-              });   
-          }
-        }
-      });
-    }
   }
 
   function getDepot(){
@@ -332,8 +262,6 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
                       html += "Metti in Manutenzione</button>";
                     }
                     else{ //MANUTENZIONE
-                      //html += "<button id='btn_chiudi_man' class='btn btn-warning' onclick=\"chiudiMan('"+arr[i].vehicle_code+"','"+arr[i].plate_num+"');\" >";
-                      //html += "Chiudi Manutenzione</button>";
                       html += "<button id='btn_gestione_man' class='btn btn-warning' onclick=\"gestioneMan('"+arr[i].vehicle_code+"','"+arr[i].plate_num+"');\" >";
                       html += "Gestione Manutenzione</button>";
                     }
@@ -349,40 +277,6 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
     xmlhttp.send();
   }
 
-  /*
-  function chiusuraNoleggio(){
-    console.log("btn_chiusura");
-    var booking_id = localStorage.getItem("booking_id");
-    var vehicle_code = localStorage.getItem("vehicle_code");
-    var plate_num = localStorage.getItem("plate_num");
-    //alert("booking_id: " + booking_id);
-    if ( (booking_id==null)||
-         (booking_id.localeCompare("")==0) )
-    {
-      return false;
-    }
-    var url = "http://service.cloudmup.com/GOALocale/CCSAppChiusura.php?booking_id="+booking_id+"&vehicle_code="+vehicle_code;
-    if (confirm("Vuoi chiudere la prenotazione: " + booking_id + " - sul veicolo targato: " + plate_num + "?")) {
-      $.ajax({
-        url: url,
-            type: 'POST', // Send post data
-            async: false,
-            success: function(s){
-              //call();
-              var result_del = s;
-              console.log(JSON.stringify(result_del));
-              //setTimeout(function(){ window.location = "home.html"; }, 1500);
-              $("#chiusura-alert").alert();
-              $("#chiusura-alert").fadeTo(2000, 500).slideUp(500, function(){
-                  $("#chiusura-alert").alert('close');
-                  window.location = "home.html";
-              });   
-            }
-      });
-    }
-  }
-  */
-
   $(document).ready(function() {
     //call();
     $("#online-alert").hide();
@@ -397,10 +291,6 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
       console.log("btn_inizio_noleggio - id: " + booking_id);
       window.plugins.insomnia.keepAwake();
       console.log("window.plugins.insomnia.keepAwake");
-      /*  MODIFICHE RICHIESTE DA MAURIZIO IN DATA 14/09/2017
-      var html = "  <div id='div_qrcode' style='background-color:#FFFFFF;padding:10px;text-align:center;'>";
-          html +="<img id='documentHolder' src='' alt='' />";
-      */
       var html = "<div style='width:100%;background:#FFFFFF;' >";
           html +="<div id='div_qrcode' style='background:#FFFFFF;float:right;text-align:center;padding:10px;'>";
           html +="<img id='documentHolder' src='' alt=''  width='170px' />";
@@ -408,7 +298,6 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
           html +="</div>"; 
       $( "#result" ).html( html);
       LoadImg(booking_id,'on','Y');
-      //debugLocalStorage();
     });
 
     $("#btn_fine_noleggio, #btn_cancella_noleggio").click(function(){
@@ -416,10 +305,6 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
       console.log("btn_fine_noleggio - id: " + booking_id);
       window.plugins.insomnia.keepAwake();
       console.log("window.plugins.insomnia.keepAwake");
-      /*  MODIFICHE RICHIESTE DA MAURIZIO IN DATA 14/09/2017
-      var html = "<div id='div_qrcode' style='background-color:#FFFFFF;padding:10px;text-align:center;'>";
-          html +="<img id='documentHolder' src='' alt='' />"; 
-      */
       var html = "<div style='width:100%;background:#FFFFFF;' >";
           html +="<div id='div_qrcode' style='background:#FFFFFF;float:right;text-align:center;padding:10px;'>";
           html +="<img id='documentHolder' src='' alt=''  width='170px' />";
@@ -429,9 +314,7 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
       LoadImg(booking_id,'off','Y');
       html = $( "#result" ).html();
       html += "<br><br>";
-      /* html += "<button onclick='chiusuraNoleggio();' type=button class='btn btn-danger btn-lg bottone' style='margin-bottom:10px;' >Conferma chiusura veicolo</button>"; */
       $( "#result" ).html( html);
-      //debugLocalStorage();
     });
 
     $("#btn_veicoli_manutenzione").click(function(){
@@ -514,93 +397,31 @@ html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value=
               La prenotazione e' stata chiusa con successo.
           </div>
           <br>
-<!-- RECUPERARE UNA IMMAGINE LATO SERVER, SALVARLA NEL LOCALSTORAGE E VISUALIZZARLA:
-https://stackoverflow.com/questions/5363957/retrieve-an-image-from-the-server-store-it-in-localstorage-and-display-it
-http://devilmaycode.altervista.org/retrieve-an-image-from-the-server-store-it-in-localstorage-and-display-it/
-view-source:http://devilmaycode.altervista.org/retrieve-an-image-from-the-server-store-it-in-localstorage-and-display-it/
--->
           <div id='result' ></div>
-
-          <!-------------------------- 
           <script>
             var lista = localStorage.getItem("lista");
             console.log("lista: " + lista);
             var matricola = localStorage.getItem("matricola");
             console.log("matricola: " + matricola);
             var html = "";
-            //DEBUG $( "#result" ).html( "<B>DEBUG lista:</B><br>" + lista );
-            if (lista != null){
-              var arr = JSON.parse(lista);  
-  /*
-  [{"vehicle_status":"PRENOTATO","booking_status":"ATTESA PICKUP","booking_id":"915005489390001","inizio_pren":"2017-07-20 13:08:59","fine_pren":"2017-07-20 21:08:59","plate_num":"AA123BB","user_id":"2","user_name":"test","depot_name":"Test"}]
-  */            
-              for(i = 0; i < arr.length; i++) {
-                console.log(i + ") vehicle_status: " + arr[i].vehicle_status);
-                console.log(i + ") booking_status: " + arr[i].booking_status);
-                console.log(i + ") booking_id: " + arr[i].booking_id);
-                console.log(i + ") inizio_pren: " + arr[i].inizio_pren);
-                console.log(i + ") fine_pren: " + arr[i].fine_pren);
-                console.log(i + ") vehicle_code: " + arr[i].vehicle_code);
-                console.log(i + ") plate_num: " + arr[i].plate_num);
-                console.log(i + ") user_id: " + arr[i].user_id);
-                console.log(i + ") user_name: " + arr[i].user_name);
-                console.log(i + ") depot_name: " + arr[i].depot_name);
-
-                //SALVO LA PRENOTAZIONE ED I DATI DEL VEICOLO NEL LOCALSTORAGE:
-                localStorage.setItem("booking_id",arr[i].booking_id);
-                localStorage.setItem("vehicle_code",arr[i].vehicle_code);
-                localStorage.setItem("plate_num",arr[i].plate_num);
-
-                html += "<table class='table table-striped' width='100%'>";
-                html += "<tr><td width='40%' >Matricola: </td><td width='60%' >" + matricola + "</td></tr>";
-                html += "<tr><td>Prenotazione: </td><td>" + arr[i].booking_id + "</td></tr>";
-                html += "<tr><td>Sede: </td><td>" + arr[i].depot_name + "</td></tr>";
-                html += "<tr><td>Partenza: </td><td>" + arr[i].inizio_pren + "</td></tr>";
-                html += "<tr><td>Riconsegna: </td><td>" + arr[i].fine_pren + "</td></tr>";
-                html += "<tr><td>&nbsp;</td><td>&nbsp;</td></tr>";
-                html += "<tr><td>Veicolo: </td><td><b>" + arr[i].plate_num + "</b></td></tr>";
-                html += "</table>";
-                if (arr[i].vehicle_status=='PRENOTATO'){
-                  html += "<button id='btn_inizio_noleggio' type=button class='btn btn-success btn-lg bottone' style='margin-bottom:10px;' >",
-                  html += "Inizio Noleggio</button>";
-                  html += "<br>";
-                  html += "<button id='btn_cancella_noleggio' type=button class='btn btn-default btn-lg bottone' style='margin-bottom:10px;' >",
-                  html += "Cancella Noleggio</button>";
-                }
-                else{
-                  html += "<button id='btn_fine_noleggio' type=button class='btn btn-danger btn-lg bottone' style='margin-bottom:10px;' >",
-                  html += "Fine Noleggio</button>";
-                }
-                localStorage.setItem("prenotazione", arr[i].booking_id);
-                LoadImg(arr[i].booking_id,'on','N');
-                LoadImg(arr[i].booking_id,'off','N');
-              }
-              if (arr.length==0){
-                //PRESA IN PARCHEGGIO:
-                html += "<table class='table table-striped' width='100%'>";
-                html += "<tr><td width='40%' >Manutentore: </td><td width='60%' >" + matricola + "</td></tr>";
-                html += "</table>";
-                html += "<br>";
-                html += "Per visualizzare i veicoli in manutenzione, seleziona la sede in cui ti trovi e premi il pulsante <b>Veicoli in manutenzione</b>.<br>";
-                html += "<br>";
-                html += "<form>";                
-                html += "<div class='form-group'>";
-                html += "<select class='form-control' id='deposito' name='deposito'>";
-                getDepot();
-                html += "</select>";
-                html += "</div>";
-                html += "</form>";
-                html += "<br>";
-                html += "<button id='btn_veicoli_manutenzione' type=button class='btn btn-primary btn-lg bottone' style='margin-bottom:10px;' >",
-                html += "Veicoli in manutenzione</button>";
-              }
-            }
+            html += "<table class='table table-striped' width='100%'>";
+            html += "<tr><td width='40%' >Manutentore: </td><td width='60%' >" + matricola + "</td></tr>";
+            html += "</table>";
+            html += "<br>";
+            html += "Per visualizzare i veicoli in manutenzione, seleziona la sede in cui ti trovi e premi il pulsante <b>Veicoli in manutenzione</b>.<br>";
+            html += "<br>";
+            html += "<form>";                
+            html += "<div class='form-group'>";
+            html += "<select class='form-control' id='deposito' name='deposito'>";
+            getDepot();
+            html += "</select>";
+            html += "</div>";
+            html += "</form>";
+            html += "<br>";
+            html += "<button id='btn_veicoli_manutenzione' type=button class='btn btn-primary btn-lg bottone' style='margin-bottom:10px;' >",
+            html += "Veicoli in manutenzione</button>";
             $( "#result" ).html( html);
-
-            //DEBUG debugLocalStorage();
-            console.log("ultima prenotazione: " + localStorage.getItem("prenotazione") ); 
           </script>
-          ----------->
 
 
         </div> <!-- close <div class="col-sm-12 col-sm-offset-0 col-md-12 col-md-offset-0 main"> -->
