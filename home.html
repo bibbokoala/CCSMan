@@ -39,8 +39,8 @@
       $("#offline-alert").fadeTo(2000, 500).slideUp(500, function(){
         $("#offline-alert").alert('close');
       });   
-      //btn_noleggia_veicolo disabled
-      $('#btn_noleggia_veicolo').addClass( "disabled" );
+      //btn_veicoli_manutenzione disabled
+      $('#btn_veicoli_manutenzione').addClass( "disabled" );
     }
     // Handle the online event
     function onOnline() {
@@ -48,8 +48,8 @@
       $("#online-alert").fadeTo(2000, 500).slideUp(500, function(){
         $("#online-alert").alert('close');
       });   
-      //btn_noleggia_veicolo enabled!
-      $('#btn_noleggia_veicolo').removeClass( "disabled" );
+      //btn_veicoli_manutenzione enabled!
+      $('#btn_veicoli_manutenzione').removeClass( "disabled" );
     }
     // Handle the back browser button
     document.addEventListener("backbutton", onBackKeyDown, false);
@@ -140,13 +140,16 @@
               }
           };
           var random = Math.random();
-          var url = 'http://service.cloudmup.com/GOALocale/CCSAppGetQRCode.php?qrcode=' + qrcode + '&action=' + action + '&random=' + random;
+          //var url = 'http://service.cloudmup.com/GOALocale/CCSAppGetQRCode.php?qrcode=' + qrcode + '&action=' + action + '&random=' + random;
+          var plate_num = qrcode;
+          var url = 'http://service.cloudmup.com/GOALocale/CCSManGetQRCode.php?plate_num=' + plate_num + '&action=' + action + '&random=' + random;
           console.log("URL: " + url);
           xmlhttp.open("GET", url);
           xmlhttp.send(null);
       }
   }
 
+/*******
   function call(){
     var matricola = localStorage.getItem("matricola");
     if (matricola==null)
@@ -163,6 +166,71 @@
     }
     xmlhttp.open("GET", url, true);
     xmlhttp.send();
+  }
+********/
+  function chiusuraManutenzione(){
+    console.log("BUTTON chiusura_manutenzione");
+    var vehicle_code = localStorage.getItem("vehicle_code");
+    var plate_num = localStorage.getItem("plate_num");
+    var url = "http://service.cloudmup.com/GOALocale/CCSManChiusura.php?vehicle_code="+vehicle_code;
+    if (confirm("Vuoi chiudere la manutenzione sul veicolo targato: " + plate_num + "?")) {
+      $.ajax({
+        url: url,
+            type: 'POST', // Send post data
+            async: false,
+            success: function(s){
+              //call();
+              var result_del = s;
+              console.log(JSON.stringify(result_del));
+              //setTimeout(function(){ window.location = "home.html"; }, 1500);
+              $("#chiusura-alert").alert();
+              $("#chiusura-alert").fadeTo(2000, 500).slideUp(500, function(){
+                  $("#chiusura-alert").alert('close');
+                  window.location = "home.html";
+              });   
+            }
+      });
+    }
+  }
+
+  function qrOpen(codice_veicolo, targa){
+    console.log("apriMan - codice_veicolo: " + codice_veicolo + " - targa: " + targa );
+    LoadImg(targa,'on','Y');
+  }
+
+  function qrClose(codice_veicolo, targa){
+    console.log("chiudiMan - codice_veicolo: " + codice_veicolo + " - targa: " + targa );
+    LoadImg(targa,'off','Y');
+  }
+
+  function gestioneMan(codice_veicolo, targa){
+    console.log("gestioneMan - codice_veicolo: " + codice_veicolo + " - targa: " + targa );
+    localStorage.setItem("vehicle_code", codice_veicolo);
+    localStorage.setItem("plate_num", targa);
+    var html = "<center>veicolo: <b>" + targa + "</b></center>";
+    html += "<br>";
+    html += "<center>";
+html += "<input type='button' id='qrcode_apertura' class='btn btn-success' value='QRCODE APERTURA' onclick=\"qrOpen('"+codice_veicolo+"','"+targa+"');\" > "; 
+html += "<input type='button' id='qrcode_chiusura' class='btn btn-danger' value='QRCODE CHIUSURA' onclick=\"qrClose('"+codice_veicolo+"','"+targa+"');\" > "; 
+
+    html += "<div style='width:100%;background:#F3F3F3;height: 260px;min-height: 260px;' >";
+    html += "<br>";
+    html += "<center>";
+    html +="<div id='div_qrcode' style='background:#F3F3F3;text-align:center;padding:10px;'>";
+    html +="<img id='documentHolder' src='' alt=''  />";
+    html +="</div>";
+    html +="</div>"; 
+
+    html += "<br>";
+    html += "<br>";
+    html += "<input type='button' id='chiusura_manutenzione' class='btn btn-lg btn-warning' value='CHIUSURA MANUTENZIONE' onclick='chiusuraManutenzione();' /> ";
+    html += "</center>";
+    $( "#result" ).html( html);
+    /*
+
+      $( "#result" ).html( html);
+      LoadImg(targa,'on','Y');
+    */
   }
 
   function prenota(codice_veicolo, targa){
@@ -186,7 +254,7 @@
           console.log("result: " + obj.result + " - id_pren: " + obj.id_pren);
           //DEBUG alert("result: " + obj.result + " - id_pren: " + obj.id_pren);
           if (obj.result=='OK'){
-              call();
+              //call();
               //alert("PRENOTAZIONE OK - ID: " + obj.id_pren);  
               //setTimeout(function(){ window.location = "home.html"; }, 1000);
               $("#prenotazione-ok-alert").alert();
@@ -222,8 +290,12 @@
             var html = "";
             var arr = JSON.parse(lista_depot);
             for(i = 0; i < arr.length; i++) {
-                console.log(i + ") depot_id: " + arr[i].depot_id + " - depot_name: " + arr[i].depot_name );
-                html += "<option value=" + arr[i].depot_id + " SELECTED >" + arr[i].depot_name + "</option>";
+                //console.log(i + ") depot_id: " + arr[i].depot_id + " - depot_name: " + arr[i].depot_name );
+                var selected ="";
+                if ( (arr[i].depot_id==7) && (matricola=="test") ){
+                  selected ="SELECTED";
+                }
+                html += "<option value=" + arr[i].depot_id + " " + selected + " >" + arr[i].depot_name + "</option>";
             }
             if (arr.length==0)
                 html += "<option value=0 SELECTED >Test</option>";
@@ -242,7 +314,7 @@
     }
     var random = Math.random();
     var xmlhttp = new XMLHttpRequest();
-    var url="http://service.cloudmup.com/GOALocale/CCSAppGetVehicles.php?id_depot="+deposito+"&random="+random;
+    var url="http://service.cloudmup.com/GOALocale/CCSManGetVehicles.php?id_depot="+deposito+"&random="+random;
     console.log("url:"+url);
     xmlhttp.onreadystatechange=function() {
         if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
@@ -252,15 +324,23 @@
                 html += "<table class='table table-striped' width='100%'>";
                 var arr = JSON.parse(lista_veicoli);
                 for(i = 0; i < arr.length; i++) {
-                    console.log(i + ") vehicle_code: " + arr[i].vehicle_code + " - plate_num: " + arr[i].plate_num );
+                    console.log(i + ") vehicle_code: " + arr[i].vehicle_code + " - status: " + arr[i].status + " - plate_num: " + arr[i].plate_num );
                     html += "<tr><td align=center><B>" + arr[i].plate_num + "</B></td>";
                     html += "<td align=center>";
-                    html += "<button id='btn_prenota' class='btn btn-primary' onclick=\"prenota('"+arr[i].vehicle_code+"','"+arr[i].plate_num+"');\" >";
-                    html += "Noleggia</button>";
+                    if (arr[i].status=='LIBERO'){
+                      html += "<button id='btn_apri_man' class='btn btn-danger' onclick=\"apriMan('"+arr[i].vehicle_code+"','"+arr[i].plate_num+"');\" >";
+                      html += "Metti in Manutenzione</button>";
+                    }
+                    else{ //MANUTENZIONE
+                      //html += "<button id='btn_chiudi_man' class='btn btn-warning' onclick=\"chiudiMan('"+arr[i].vehicle_code+"','"+arr[i].plate_num+"');\" >";
+                      //html += "Chiudi Manutenzione</button>";
+                      html += "<button id='btn_gestione_man' class='btn btn-warning' onclick=\"gestioneMan('"+arr[i].vehicle_code+"','"+arr[i].plate_num+"');\" >";
+                      html += "Gestione Manutenzione</button>";
+                    }
                     html += "</td></tr>";
                 }
                 if (arr.length==0)
-                    html += "<br>Nessun veicolo disponibile.<br>";
+                    html += "<br>Nessun veicolo in manutenzione.<br>";
                 html += "</table>";
             $( "#result" ).html( html );
         }
@@ -269,6 +349,7 @@
     xmlhttp.send();
   }
 
+  /*
   function chiusuraNoleggio(){
     console.log("btn_chiusura");
     var booking_id = localStorage.getItem("booking_id");
@@ -287,7 +368,7 @@
             type: 'POST', // Send post data
             async: false,
             success: function(s){
-              call();
+              //call();
               var result_del = s;
               console.log(JSON.stringify(result_del));
               //setTimeout(function(){ window.location = "home.html"; }, 1500);
@@ -300,9 +381,10 @@
       });
     }
   }
+  */
 
   $(document).ready(function() {
-    call();
+    //call();
     $("#online-alert").hide();
     $("#offline-alert").hide();
     $("#prenotazione-ok-alert").hide();
@@ -352,9 +434,9 @@
       //debugLocalStorage();
     });
 
-    $("#btn_noleggia_veicolo").click(function(){
+    $("#btn_veicoli_manutenzione").click(function(){
       var deposito = $('#deposito').val();
-      console.log("btn_noleggia_veicolo: " + deposito);
+      console.log("btn_veicoli_manutenzione: " + deposito);
       var nome_deposito = $("#deposito option:selected").html();
       console.log( "nome deposito: " + nome_deposito );
       getVehicles(deposito, nome_deposito);
@@ -494,29 +576,21 @@ view-source:http://devilmaycode.altervista.org/retrieve-an-image-from-the-server
               if (arr.length==0){
                 //PRESA IN PARCHEGGIO:
                 html += "<table class='table table-striped' width='100%'>";
-                html += "<tr><td width='40%' >Matricola: </td><td width='60%' >" + matricola + "</td></tr>";
+                html += "<tr><td width='40%' >Manutentore: </td><td width='60%' >" + matricola + "</td></tr>";
                 html += "</table>";
                 html += "<br>";
-                html += "Se desideri effettuare un noleggio utilizzando la Presa in parcheggio seleziona la sede in cui ti trovi e premi il pulsante Noleggia un veicolo.<br>";
+                html += "Per visualizzare i veicoli in manutenzione, seleziona la sede in cui ti trovi e premi il pulsante <b>Veicoli in manutenzione</b>.<br>";
                 html += "<br>";
                 html += "<form>";                
                 html += "<div class='form-group'>";
                 html += "<select class='form-control' id='deposito' name='deposito'>";
                 getDepot();
-/* QUERY PER PRENDERE TUTTE LE SEDI VALIDE X IL CCS:
-SELECT depot_id, depot_name from cpool_depot WHERE `status` = 'ENABLED' AND fk_category_id = ( SELECT IFNULL(p.fk_category_id, 1) FROM cpool_user_profile up JOIN cpool_profiles p ON (p.profile_id = up.profile_id) WHERE up.user_id = 2 );
-- 0   Test
-- 2   Demo
-PREPARATA PAGINA LATO SERVER: CCSAppGetDepot.php
-*/
-                //html += "<option value=0 SELECTED >Test</option>";
-                //html += "<option value=2>Demo</option>";
                 html += "</select>";
                 html += "</div>";
                 html += "</form>";
                 html += "<br>";
-                html += "<button id='btn_noleggia_veicolo' type=button class='btn btn-primary btn-lg bottone' style='margin-bottom:10px;' >",
-                html += "Noleggia un veicolo</button>";
+                html += "<button id='btn_veicoli_manutenzione' type=button class='btn btn-primary btn-lg bottone' style='margin-bottom:10px;' >",
+                html += "Veicoli in manutenzione</button>";
               }
             }
             $( "#result" ).html( html);
